@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EbookFlow - Plataforma de E-books com Supabase</title>
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRWJvb2tGbG93Iiwic2hvcnRfbmFtZSI6IkVib29rRmxvdyIsInN0YXJ0X3VybCI6Ii8iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMWExYTFhIiwidGhlbWVfY29sb3IiOiIjNjM2NmYxIiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbCwlM0NzdmcgeG1sbnM9J2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJyB2aWV3Qm94PScwIDAgMTAwIDEwMCclM0UlM0NyZWN0IGZpbGw9JyUyMzYzNjZmMScgd2lkdGg9JzEwMCcgaGVpZ2h0PScxMDAnLyUzRSUzQ3RleHQgeD0nNTAnIHk9JzUwJyBmb250LXNpemU9JzUwJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyBkeT0nLjNlbScgZmlsbD0nd2hpdGUnJTNFRSUzQy90ZXh0JTNFJTNDL3N2ZyUzRSIsInNpemVzIjoiNTEyeDUxMiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .login-box, .dashboard, .reader {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 { color: #667eea; margin-bottom: 30px; }
+        h2 { color: #333; margin: 20px 0; }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #666;
+            font-size: 16px;
+            position: relative;
+        }
+
+        .tab.active {
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .ebook-item, .client-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-delete {
+            background: #e74c3c;
+            padding: 8px 16px;
+        }
+
+        .btn-copy {
+            background: #3498db;
+            padding: 8px 16px;
+            margin-right: 10px;
+        }
+
+        .btn-toggle {
+            background: #f39c12;
+            padding: 8px 16px;
+            margin-right: 10px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .status.active {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .status.inactive {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); }
+            to { transform: translateX(0); }
+        }
+
+        .notification.success { background: #2ecc71; }
+        .notification.error { background: #e74c3c; }
+        .notification.info { background: #3498db; }
+
+        .reader {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .reader-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .reader-controls {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .reader-controls button {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        #pdfCanvas {
+            width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .page-info {
+            text-align: center;
+            color: #666;
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .dark-mode {
+            background: #1a1a1a;
+        }
+
+        .dark-mode .reader {
+            background: #2d2d2d;
+            color: #fff;
+        }
+
+        .dark-mode #pdfCanvas {
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        .error-page {
+            text-align: center;
+            padding: 100px 20px;
+            background: white;
+            border-radius: 20px;
+        }
+
+        .error-page h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .client-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .login-box, .dashboard, .reader {
+                padding: 20px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+
+            .ebook-item, .client-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .client-actions {
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div id="loginPage" class="login-box">
+            <h1>📚 EbookFlow</h1>
+            <h2>Login Administrativo</h2>
+            <form onsubmit="login(event)">
+                <div class="form-group">
+                    <label>Usuário</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
+
+        <div id="dashboardPage" class="dashboard" style="display:none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1>📚 Painel Administrativo</h1>
+                <button onclick="logout()">Sair</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <h3 id="totalEbooks">0</h3>
+                    <p>E-books</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalClients">0</h3>
+                    <p>Clientes</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="totalViews">0</h3>
+                    <p>Visualizações</p>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('upload')">Upload de E-books</button>
+                <button class="tab" onclick="switchTab('manage')">Gerenciar E-books</button>
+                <button class="tab" onclick="switchTab('clients')">Gerenciar Clientes</button>
+            </div>
+
+            <div id="uploadTab" class="tab-content active">
+                <h2>Enviar Novo E-book</h2>
+                <form id="uploadForm" onsubmit="uploadEbook(event)">
+                    <div class="form-group">
+                        <label>Título do E-book</label>
+                        <input type="text" id="ebookTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição</label>
+                        <textarea id="ebookDesc" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Arquivo PDF</label>
+                        <input type="file" id="ebookFile" accept=".pdf" required>
+                    </div>
+                    <button type="submit">📤 Enviar E-book</button>
+                </form>
+            </div>
+
+            <div id="manageTab" class="tab-content">
+                <h2>E-books Cadastrados</h2>
+                <div id="ebooksList"></div>
+            </div>
+
+            <div id="clientsTab" class="tab-content">
+                <h2>Adicionar Novo Cliente</h2>
+                <form id="clientForm" onsubmit="addClient(event)">
+                    <div class="form-group">
+                        <label>Nome do Cliente</label>
+                        <input type="text" id="clientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-mail</label>
+                        <input type="email" id="clientEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-book</label>
+                        <select id="clientEbook" required>
+                            <option value="">Selecione um e-book</option>
+                        </select>
+                    </div>
+                    <button type="submit">➕ Adicionar Cliente</button>
+                </form>
+
+                <h2 style="margin-top: 40px;">Clientes Cadastrados</h2>
+                <div id="clientsList"></div>
+            </div>
+        </div>
+
+        <div id="readerPage" class="reader" style="display:none;">
+            <div class="reader-header">
+                <h2 id="ebookTitle"></h2>
+                <button onclick="toggleDarkMode()">🌙 Modo Escuro</button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+
+            <div class="reader-controls">
+                <button onclick="prevPage()">⬅️ Anterior</button>
+                <button onclick="nextPage()">Próxima ➡️</button>
+                <button onclick="zoomIn()">🔍 Zoom +</button>
+                <button onclick="zoomOut()">🔍 Zoom -</button>
+                <button onclick="toggleFullscreen()">⛶ Tela Cheia</button>
+            </div>
+
+            <div class="page-info">
+                <span>Página <span id="currentPage">1</span> de <span id="totalPages">1</span></span>
+            </div>
+
+            <canvas id="pdfCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // CONFIGURAÇÃO DO SUPABASE - ✅ CONFIGURADO!
+        // ========================================
+        
+        const SUPABASE_URL = 'https://jrmxzfycyvlejjhsvfvu.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpybXh6ZnljeXZsZWpqaHN2ZnZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NDc4NDUsImV4cCI6MjA4NDAyMzg0NX0.Cv_o3ssiF_BHhAOhlvBNCTpTR_CVM3W6akpL1MnGm6I';
+        
+        // Inicializar Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let ebooks = [];
+        let clients = [];
+        let currentEbook = null;
+        let currentPage = 1;
+        let totalPages = 0;
+        let pdfDoc = null;
+        let scale = 1.5;
+        let isDarkMode = false;
+
+        // ========================================
+        // FUNÇÕES DE BANCO DE DADOS
+        // ========================================
+        
+        async function loadData() {
+            try {
+                // Carregar e-books
+                const { data: ebooksData, error: ebooksError } = await supabase
+                    .from('ebooks')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (ebooksError) throw ebooksError;
+                ebooks = ebooksData || [];
+
+                // Carregar clientes
+                const { data: clientsData, error: clientsError } = await supabase
+                    .from('clients')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (clientsError) throw clientsError;
+                clients = clientsData || [];
+
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                showNotification('Erro ao carregar dados: ' + error.message, 'error');
+            }
+        }
+
+        async function saveEbook(ebook) {
+            try {
+                const { data, error } = await supabase
+                    .from('ebooks')
+                    .insert([ebook])
+                    .select();
+                
+                if (error) throw error;
+                return data[0];
+            } catch (error) {
+                console.error('Erro ao salvar e-book:', error);
+                throw error;
+            }
+        }
+
+        async function updateEbook(id, updates) {
+            try {
+                const { error } = await supabase
+                    .from('ebooks')
+                    .update(updates)
+                    .eq('id', id);
+                
+                if (error) throw error;
+            } catch (error) {
+                console.error('Erro ao atualizar e-book:', error);
+                throw error;
+            }
+        }
+
+        async function deleteEbook(id) {
+            try {
+                const { error } = await supabase
+                    .from('ebooks')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+            } catch (error) {
+                console.error('Erro ao deletar e-book:', error);
+                throw error;
+            }
+        }
+
+        async function saveClient(client) {
+            try {
+                const { data, error } = await supabase
+                    .from('clients')
+                    .insert([client])
+                    .select();
+                
+                if (error) throw error;
+                return data[0];
+            } catch (error) {
+                console.error('Erro ao salvar cliente:', error);
+                throw error;
+            }
+        }
+
+        async function updateClient(id, updates) {
+            try {
+                const { error } = await supabase
+                    .from('clients')
+                    .update(updates)
+                    .eq('id', id);
+                
+                if (error) throw error;
+            } catch (error) {
+                console.error('Erro ao atualizar cliente:', error);
+                throw error;
+            }
+        }
+
+        async function deleteClient(id) {
+            try {
+                const { error } = await supabase
+                    .from('clients')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+            } catch (error) {
+                console.error('Erro ao deletar cliente:', error);
+                throw error;
+            }
+        }
+
+        async function uploadPDF(file) {
+            try {
+                const fileName = `${Date.now()}-${file.name}`;
+                const { data, error } = await supabase.storage
+                    .from('pdfs')
+                    .upload(fileName, file);
+                
+                if (error) throw error;
+
+                const { data: urlData } = supabase.storage
+                    .from('pdfs')
+                    .getPublicUrl(fileName);
+                
+                return urlData.publicUrl;
+            } catch (error) {
+                console.error('Erro ao fazer upload:', error);
+                throw error;
+            }
+        }
+
+        // Login
+        async function login(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === 'admin123') {
+                currentUser = { username, role: 'admin' };
+                await loadData();
+                showDashboard();
+            } else {
+                showNotification('Usuário ou senha incorretos', 'error');
+            }
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            document.getElementById('dashboardPage').style.display = 'none';
+            document.getElementById('loginPage').style.display = 'block';
+        }
+
+        // Show Dashboard
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboardPage').style.display = 'block';
+            renderEbooks();
+            renderClients();
+            updateStats();
+        }
+
+        // Upload Ebook
+        async function uploadEbook(e) {
+            e.preventDefault();
+            const title = document.getElementById('ebookTitle').value;
+            const description = document.getElementById('ebookDesc').value;
+            const fileInput = document.getElementById('ebookFile');
+            const file = fileInput.files[0];
+
+            if (!file || file.type !== 'application/pdf') {
+                showNotification('Selecione um arquivo PDF válido', 'error');
+                return;
+            }
+
+            try {
+                showNotification('Fazendo upload... Aguarde', 'info');
+                
+                // Upload do PDF para Supabase Storage
+                const pdfUrl = await uploadPDF(file);
+
+                const newEbook = {
+                    title,
+                    description,
+                    pdf_url: pdfUrl,
+                    views: 0,
+                    created_at: new Date().toISOString()
+                };
+
+                const savedEbook = await saveEbook(newEbook);
+                ebooks.push(savedEbook);
+                
+                showNotification('E-book enviado com sucesso!', 'success');
+                document.getElementById('uploadForm').reset();
+                renderEbooks();
+            } catch (error) {
+                showNotification('Erro ao enviar e-book: ' + error.message, 'error');
+            }
+        }
+
+        // Add Client
+        async function addClient(e) {
+            e.preventDefault();
+            const name = document.getElementById('clientName').value;
+            const email = document.getElementById('clientEmail').value;
+            const ebookId = document.getElementById('clientEbook').value;
+
+            const token = generateToken();
+            const newClient = {
+                name,
+                email,
+                ebook_id: ebookId,
+                token,
+                active: true,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const savedClient = await saveClient(newClient);
+                clients.push(savedClient);
+                
+                showNotification('Cliente adicionado com sucesso!', 'success');
+                document.getElementById('clientForm').reset();
+                renderClients();
+            } catch (error) {
+                showNotification('Erro ao adicionar cliente: ' + error.message, 'error');
+            }
+        }
+
+        // Generate Token
+        function generateToken() {
+            return Math.random().toString(36).substring(2) + Date.now().toString(36);
+        }
+
+        // Render Ebooks List
+        function renderEbooks() {
+            const list = document.getElementById('ebooksList');
+            list.innerHTML = ebooks.map(ebook => `
+                <div class="ebook-item">
+                    <div>
+                        <h4>${ebook.title}</h4>
+                        <p>${ebook.description}</p>
+                        <small>📊 ${ebook.views} visualizações</small>
+                    </div>
+                    <button class="btn-delete" onclick="deleteEbookById('${ebook.id}')">🗑️ Deletar</button>
+                </div>
+            `).join('');
+
+            const select = document.getElementById('clientEbook');
+            select.innerHTML = '<option value="">Selecione um e-book</option>' +
+                ebooks.map(ebook => `<option value="${ebook.id}">${ebook.title}</option>`).join('');
+        }
+
+        // Render Clients List
+        function renderClients() {
+            const list = document.getElementById('clientsList');
+            list.innerHTML = clients.map(client => {
+                const ebook = ebooks.find(e => e.id === client.ebook_id);
+                const link = `${window.location.origin}${window.location.pathname}?token=${client.token}`;
+                return `
+                    <div class="client-item">
+                        <div>
+                            <h4>${client.name}</h4>
+                            <p>📧 ${client.email}</p>
+                            <p>📚 ${ebook ? ebook.title : 'E-book não encontrado'}</p>
+                            <small class="status ${client.active ? 'active' : 'inactive'}">
+                                ${client.active ? '✅ Ativo' : '❌ Inativo'}
+                            </small>
+                        </div>
+                        <div class="client-actions">
+                            <button class="btn-copy" onclick="copyLink('${link}')">📋 Copiar Link</button>
+                            <button class="btn-toggle" onclick="toggleClientStatus('${client.id}')">
+                                ${client.active ? '🔒 Desativar' : '🔓 Ativar'}
+                            </button>
+                            <button class="btn-delete" onclick="deleteClientById('${client.id}')">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Delete functions
+        async function deleteEbookById(id) {
+            if (confirm('Tem certeza que deseja deletar este e-book?')) {
+                try {
+                    await deleteEbook(id);
+                    ebooks = ebooks.filter(e => e.id !== id);
+                    renderEbooks();
+                    updateStats();
+                    showNotification('E-book deletado com sucesso!', 'success');
+                } catch (error) {
+                    showNotification('Erro ao deletar e-book: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function deleteClientById(id) {
+            if (confirm('Tem certeza que deseja deletar este cliente?')) {
+                try {
+                    await deleteClient(id);
+                    clients = clients.filter(c => c.id !== id);
+                    renderClients();
+                    updateStats();
+                    showNotification('Cliente deletado com sucesso!', 'success');
+                } catch (error) {
+                    showNotification('Erro ao deletar cliente: ' + error.message, 'error');
+                }
+            }
+        }
+
+        async function toggleClientStatus(id) {
+            const client = clients.find(c => c.id === id);
+            if (client) {
+                try {
+                    await updateClient(id, { active: !client.active });
+                    client.active = !client.active;
+                    renderClients();
+                    showNotification(`Cliente ${client.active ? 'ativado' : 'desativado'}!`, 'success');
+                } catch (error) {
+                    showNotification('Erro ao atualizar status: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Copy Link
+        function copyLink(link) {
+            navigator.clipboard.writeText(link);
+            showNotification('Link copiado!', 'success');
+        }
+
+        // Update Stats
+        function updateStats() {
+            document.getElementById('totalEbooks').textContent = ebooks.length;
+            document.getElementById('totalClients').textContent = clients.length;
+            document.getElementById('totalViews').textContent = ebooks.reduce((sum, e) => sum + e.views, 0);
+        }
+
+        // Switch Tab
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        // Show Notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.remove(), 3000);
+        }
+
+        // Load ebook for client
+        async function loadClientEbook(token) {
+            await loadData();
+            const client = clients.find(c => c.token === token);
+            
+            if (!client) {
+                document.body.innerHTML = '<div class="error-page"><h1>❌ Link Inválido</h1><p>Este link não existe ou expirou.</p></div>';
+                return;
+            }
+
+            if (!client.active) {
+                document.body.innerHTML = '<div class="error-page"><h1>🔒 Acesso Bloqueado</h1><p>Seu acesso foi desativado. Entre em contato com o suporte.</p></div>';
+                return;
+            }
+
+            const ebook = ebooks.find(e => e.id === client.ebook_id);
+            
+            if (!ebook) {
+                document.body.innerHTML = '<div class="error-page"><h1>📚 E-book não encontrado</h1></div>';
+                return;
+            }
+
+            currentEbook = ebook;
+            
+            // Incrementar views
+            try {
+                await updateEbook(ebook.id, { views: ebook.views + 1 });
+                ebook.views++;
+            } catch (error) {
+                console.error('Erro ao atualizar views:', error);
+            }
+
+            showReader();
+            loadPDF(ebook.pdf_url);
+        }
+
+        // Show Reader
+        function showReader() {
+            document.getElementById('loginPage').style.display= 'none';
+            document.getElementById('dashboardPage').style.display = 'none';
+            document.getElementById('readerPage').style.display = 'block';
+            document.getElementById('ebookTitle').textContent = currentEbook.title;
+        }
+
+        // Load PDF
+        async function loadPDF(url) {
+            try {
+                const loadingTask = pdfjsLib.getDocument(url);
+                pdfDoc = await loadingTask.promise;
+                totalPages = pdfDoc.numPages;
+                
+                const savedPage = localStorage.getItem(`lastPage_${currentEbook.id}`);
+                currentPage = savedPage ? parseInt(savedPage) : 1;
+                
+                renderPage(currentPage);
+                updatePageInfo();
+            } catch (error) {
+                console.error('Erro ao carregar PDF:', error);
+                showNotification('Erro ao carregar o PDF', 'error');
+            }
+        }
+
+        // Render PDF Page
+        async function renderPage(num) {
+            const page = await pdfDoc.getPage(num);
+            const canvas = document.getElementById('pdfCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const viewport = page.getViewport({ scale });
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+
+            await page.render({
+                canvasContext: ctx,
+                viewport: viewport
+            }).promise;
+
+            localStorage.setItem(`lastPage_${currentEbook.id}`, currentPage);
+            updateProgress();
+        }
+
+        // Navigation
+        function nextPage() {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPage(currentPage);
+                updatePageInfo();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPage(currentPage);
+                updatePageInfo();
+            }
+        }
+
+        // Zoom
+        function zoomIn() {
+            scale += 0.25;
+            renderPage(currentPage);
+        }
+
+        function zoomOut() {
+            if (scale > 0.5) {
+                scale -= 0.25;
+                renderPage(currentPage);
+            }
+        }
+
+        // Dark Mode
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode');
+        }
+
+        // Fullscreen
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Update Page Info
+        function updatePageInfo() {
+            document.getElementById('currentPage').textContent = currentPage;
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+
+        // Update Progress
+        function updateProgress() {
+            const progress = (currentPage / totalPages) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        // Initialize
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            if (token) {
+                loadClientEbook(token);
+            }
+        };
+
+        // PDF.jsWorkerSrc
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+</body>
+</html>
